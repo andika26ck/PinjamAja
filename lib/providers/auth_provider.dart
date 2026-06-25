@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+
 // Pisahkan import supabase biar nggak bentrok nama AuthState dan User
 import 'package:supabase_flutter/supabase_flutter.dart' hide AuthState, User;
 import 'package:supabase_flutter/supabase_flutter.dart' as supa show AuthState, User;
@@ -40,7 +41,6 @@ class AuthState extends Equatable {
   List<Object?> get props => [status, user, error];
 }
 
-// Bikin class Auth menggunakan anotasi @riverpod langsung
 @riverpod
 class Auth extends _$Auth {
   @override
@@ -82,15 +82,24 @@ class Auth extends _$Auth {
   }) async {
     state = const AsyncValue.loading();
     try {
+      // 1. Eksekusi registrasi ke Supabase
       await AuthService.signUp(
         name: name, email: email, password: password, phone: phone,
       );
+
+      // 2. Paksa sign out untuk membatalkan auto-login bawaan Supabase
+      await AuthService.signOut();
+
+      // 3. Set state kembali ke unauthenticated supaya tetap di halaman luar
       state = const AsyncValue.data(
-        AuthState(status: AuthStatus.unconfirmed),
+        AuthState(status: AuthStatus.unauthenticated),
       );
     } catch (e) {
       final errorMsg = (e is AppException) ? e.message : 'Terjadi kesalahan.';
       state = AsyncValue.error(AppException(message: errorMsg), StackTrace.current);
+      
+      // Lempar ulang error agar bisa ditangkap oleh blok try-catch di UI (tombol Daftar)
+      rethrow;
     }
   }
 
@@ -106,19 +115,20 @@ class Auth extends _$Auth {
   }
 
   Future<void> setRole(UserRole role) async {
-    final currentUser = state.valueOrNull?.user;
-    if (currentUser == null) {
-      state = AsyncValue.error(AppException(message: 'User belum login.'), StackTrace.current);
+    final session = SupabaseConfig.auth.currentSession;
+    
+    if (session == null) {
+      state = AsyncValue.error(AppException(message: 'Sesi tidak ditemukan. Silakan login ulang.'), StackTrace.current);
       return;
     }
-
+    
     try {
-      final updatedUser = await AuthService.setRole(currentUser.id, role);
+      final updatedUser = await AuthService.setRole(session.user.id, role);
       state = AsyncValue.data(
         AuthState(status: AuthStatus.authenticated, user: updatedUser),
       );
     } catch (e) {
-      final errorMsg = (e is AppException) ? e.message : 'Terjadi kesalahan.';
+      final errorMsg = (e is AppException) ? e.message : 'Terjadi kesalahan saat menyimpan peran.';
       state = AsyncValue.error(AppException(message: errorMsg), StackTrace.current);
     }
   }
@@ -146,7 +156,6 @@ class Auth extends _$Auth {
   }
 }
 
-// Gunakan tipe supa.AuthState dari alias yang kita buat
 @riverpod
 Stream<supa.AuthState> authStateChanges(AuthStateChangesRef ref) {
   return SupabaseConfig.auth.onAuthStateChange;

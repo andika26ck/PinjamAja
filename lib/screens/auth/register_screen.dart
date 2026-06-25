@@ -42,52 +42,24 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     super.dispose();
   }
 
-  void _handleRegister() {
+  // PERBAIKAN: _handleRegister sekarang pakai async dan try-catch
+  Future<void> _handleRegister() async {
+    // Tutup keyboard saat tombol ditekan
+    FocusScope.of(context).unfocus();
+
     if (_formKey.currentState?.validate() ?? false) {
-      ref.read(authProvider.notifier).signUp(
-        name: _nameController.text.trim(),
-        email: _emailController.text.trim(),
-        password: _passwordController.text,
-        phone: _phoneController.text.trim(),
-      );
-    }
-  }
+      try {
+        // Await proses signUp dari provider
+        await ref.read(authProvider.notifier).signUp(
+              name: _nameController.text.trim(),
+              email: _emailController.text.trim(),
+              password: _passwordController.text,
+              phone: _phoneController.text.trim(),
+            );
 
-  @override
-  Widget build(BuildContext context) {
-    final authState = ref.watch(authProvider);
-
-    // Listen untuk success dan error
-    ref.listen(authProvider, (prev, next) {
-      if (next.hasError) {
-        // Tampilan Notif Error Keren
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.warning_amber_rounded, color: Colors.white),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    next.error.toString().replaceAll('Exception: ', ''),
-                    style: const TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                ),
-              ],
-            ),
-            backgroundColor: Colors.redAccent.shade700,
-            behavior: SnackBarBehavior.floating,
-            margin: const EdgeInsets.all(20),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            duration: const Duration(seconds: 4),
-          ),
-        );
-      } else if (next.hasValue) {
-        // Tampilan Notif Sukses Keren
-        final state = next.value!;
-        if (state.status.name == 'unconfirmed') {
+        // Jika berhasil dan context masih aktif
+        if (mounted) {
+          // Tampilan Notif Sukses Keren
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: const Row(
@@ -111,14 +83,50 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               duration: const Duration(seconds: 3),
             ),
           );
-          Future.delayed(const Duration(seconds: 2), () {
-            if (mounted) context.go('/login');
-          });
+
+          // Langsung tendang ke halaman login tanpa nunggu delay
+          context.go('/login');
+        }
+      } catch (e) {
+        // Jika gagal dan context masih aktif
+        if (mounted) {
+          // Tampilan Notif Error Keren
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.warning_amber_rounded, color: Colors.white),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      e.toString().replaceAll('Exception: ', ''),
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: Colors.redAccent.shade700,
+              behavior: SnackBarBehavior.floating,
+              margin: const EdgeInsets.all(20),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              duration: const Duration(seconds: 4),
+            ),
+          );
         }
       }
-    });
+    }
+  }
 
+  @override
+  Widget build(BuildContext context) {
+    // Kita tetap memantau authProvider untuk mendapatkan status isLoading
+    final authState = ref.watch(authProvider);
     final isLoading = authState.isLoading;
+
+    // PERBAIKAN: ref.listen dihapus karena logic snackbar 
+    // sudah dipindah ke dalam try-catch di fungsi _handleRegister.
 
     return Scaffold(
       appBar: AppBar(
@@ -157,7 +165,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Nama
-                    Text('Nama Lengkap', style: Theme.of(context).textTheme.labelLarge),
+                    Text('Nama Lengkap',
+                        style: Theme.of(context).textTheme.labelLarge),
                     const SizedBox(height: 8),
                     TextFormField(
                       controller: _nameController,
@@ -184,7 +193,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     ),
                     const SizedBox(height: 16),
                     // Nomor HP
-                    Text('Nomor HP', style: Theme.of(context).textTheme.labelLarge),
+                    Text('Nomor HP',
+                        style: Theme.of(context).textTheme.labelLarge),
                     const SizedBox(height: 8),
                     TextFormField(
                       controller: _phoneController,
@@ -205,7 +215,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           return 'Nomor HP tidak boleh kosong';
                         }
                         // Remove +62 prefix untuk validasi panjang
-                        final digits = value.replaceAll(RegExp(r'[^0-9]'), '');
+                        final digits =
+                            value.replaceAll(RegExp(r'[^0-9]'), '');
                         if (digits.length < 10 || digits.length > 13) {
                           return 'Nomor HP harus 10-13 digit';
                         }
@@ -214,7 +225,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     ),
                     const SizedBox(height: 16),
                     // Email
-                    Text('Email', style: Theme.of(context).textTheme.labelLarge),
+                    Text('Email',
+                        style: Theme.of(context).textTheme.labelLarge),
                     const SizedBox(height: 8),
                     TextFormField(
                       controller: _emailController,
@@ -242,7 +254,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     ),
                     const SizedBox(height: 16),
                     // Password
-                    Text('Password', style: Theme.of(context).textTheme.labelLarge),
+                    Text('Password',
+                        style: Theme.of(context).textTheme.labelLarge),
                     const SizedBox(height: 8),
                     TextFormField(
                       controller: _passwordController,
@@ -314,7 +327,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           ),
                           onPressed: () {
                             setState(() {
-                              _confirmPasswordObscured = !_confirmPasswordObscured;
+                              _confirmPasswordObscured =
+                                  !_confirmPasswordObscured;
                             });
                           },
                         ),
