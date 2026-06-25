@@ -1,0 +1,54 @@
+name: pinjam_aja
+description: "PinjamAja — P2P rental marketplace untuk barang hobi dan kebutuhan harian."
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+  flutter: '>=3.19.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  flutter_riverpod: ^2.5.1
+  riverpod_annotation: ^2.3.5
+  go_router: ^13.2.0
+  supabase_flutter: ^2.3.4
+  dio: ^5.4.1
+  # Dinaikkan dari ^0.18.1 (versi asli di prompt) ke ^0.20.3 — table_calendar
+  # ^3.1.1 secara real butuh intl ^0.19.0/^0.20.0, jadi ^0.18.1 gagal resolve.
+  # Lihat error `flutter pub get` yang kamu kirim.
+  intl: ^0.20.3
+  flutter_secure_storage: ^9.0.0
+  cached_network_image: ^3.3.1
+  image_picker: ^1.0.7
+  flutter_image_compress: ^2.1.0
+  table_calendar: ^3.1.1
+  shimmer: ^3.0.0
+  timeago: ^3.6.1
+  equatable: ^2.0.5
+  dotted_border: ^2.1.0
+
+  # --- Ditambahkan, TIDAK ada di daftar dependency Prompt #1 ---
+  # google_fonts: dibutuhkan task 4 (font Poppins/Inter) di app_theme.dart.
+  google_fonts: ^6.2.1
+  # cupertino_icons: default bawaan `flutter create`, dipakai beberapa ikon iOS-style.
+  cupertino_icons: ^1.0.6
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  riverpod_generator: ^2.4.0
+  build_runner: ^2.4.8
+  riverpod_lint: ^2.3.9
+  custom_lint: ^0.6.4
+
+  # --- Ditambahkan ---
+  # flutter_lints: tanpa ini, "flutter analyze clean 0 warnings 0 errors" jadi
+  # trivial karena tidak ada rule lint yang aktif sama sekali.
+  flutter_lints: ^3.0.2
+
+flutter:
+  uses-material-design: true
